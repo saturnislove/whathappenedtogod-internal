@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WHATHAPPENEDTOGOD &mdash; INTERNAL</title>
+  <link rel="icon" type="image/png" href="https://whathappenedtogod.co/cdn/shop/files/OVD_BLACK_TRANSPARENT.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&display=swap');
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    a, a:link, a:visited, a:hover, a:active { color: inherit !important; text-decoration: none !important; }
+    .link-row, .link-row:link, .link-row:visited { color: inherit !important; text-decoration: none !important; }
+    .status-card, .status-card:link, .status-card:visited { color: inherit !important; text-decoration: none !important; }
+    body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e0e0e0; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; padding: 28px 48px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .logo { width: 48px; height: 48px; opacity: 0.85; cursor: pointer; transition: opacity 0.3s; filter: invert(1); }
+    .logo:hover { opacity: 1; }
+    .logo img { width: 100%; height: 100%; object-fit: contain; }
+    .header-right { text-align: right; font-weight: 300; letter-spacing: 0.5px; }
+    .header-date { font-size: 11px; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 1.5px; }
+    .header-time { font-size: 22px; font-weight: 200; color: rgba(255,255,255,0.7); margin-top: 2px; }
+    .header-location { font-size: 10px; color: rgba(255,255,255,0.3); letter-spacing: 1px; margin-top: 4px; }
+    .container { max-width: 900px; margin: 0 auto; padding: 48px 32px 80px; }
+    .page-title { font-size: 15px; font-weight: 300; letter-spacing: 8px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 40px; }
+    .search-container { margin-bottom: 32px; }
+    .search-input { width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 20px 14px 44px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 300; color: #e0e0e0; letter-spacing: 0.5px; outline: none; transition: border-color 0.3s, background 0.3s; }
+    .search-input::placeholder { color: rgba(255,255,255,0.2); }
+    .search-input:focus { border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); }
+    .search-wrapper { position: relative; }
+    .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.2); width: 16px; height: 16px; }
+    .status-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 48px; }
+    .status-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 16px 18px; transition: border-color 0.3s, background 0.3s; display: block; }
+    .status-card:hover { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); }
+    .status-label { font-size: 10px; font-weight: 400; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot-green { background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,0.4); }
+    .status-value { font-size: 14px; font-weight: 300; color: rgba(255,255,255,0.7); }
+    .section { margin-bottom: 48px; }
+    .section-title { font-size: 10px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.25); margin-bottom: 16px; padding-bottom: 8px; }
+    .link-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background 0.25s, padding-left 0.25s; border-radius: 4px; position: relative; }
+    .link-row:hover { background: rgba(255,255,255,0.035); padding-left: 24px; }
+    .link-row-left { display: flex; align-items: center; gap: 12px; flex: 1; }
+    .link-icon { width: 16px; height: 16px; color: rgba(255,255,255,0.25); flex-shrink: 0; transition: color 0.25s; }
+    .link-row:hover .link-icon { color: rgba(255,255,255,0.5); }
+    .link-name { font-size: 14px; font-weight: 300; color: rgba(255,255,255,0.75); letter-spacing: 0.3px; transition: color 0.25s; }
+    .link-row:hover .link-name { color: rgba(255,255,255,0.95); }
+    .link-type { font-size: 10px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.2); transition: color 0.25s; }
+    .link-row:hover .link-type { color: rgba(255,255,255,0.35); }
+    .link-actions { display: flex; gap: 8px; margin-left: 16px; opacity: 0; transition: opacity 0.25s; }
+    .link-row:hover .link-actions { opacity: 1; }
+    .action-btn { background: none; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.4); cursor: pointer; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-family: 'Inter', sans-serif; letter-spacing: 0.5px; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; }
+    .action-btn svg { width: 12px; height: 12px; }
+    .action-btn:hover { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.7); }
+    .action-btn.delete:hover { border-color: rgba(248,113,113,0.4); color: #f87171; }
+    .add-link { display: flex; align-items: center; gap: 8px; padding: 14px 16px; cursor: pointer; color: rgba(255,255,255,0.2); font-size: 12px; font-weight: 300; letter-spacing: 1px; text-transform: uppercase; transition: color 0.25s; }
+    .add-link:hover { color: rgba(255,255,255,0.45); }
+    .add-link svg { width: 14px; height: 14px; }
+    .edit-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 100; justify-content: center; align-items: center; }
+    .edit-overlay.active { display: flex; }
+    .edit-modal { background: #141414; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 32px; width: 400px; max-width: 90vw; overflow: hidden; }
+    .edit-modal h3 { font-size: 12px; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 24px; }
+    .edit-field { margin-bottom: 16px; overflow: hidden; }
+    .edit-field label { display: block; font-size: 10px; font-weight: 400; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 6px; }
+    .edit-field input { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 10px 14px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 300; color: #e0e0e0; outline: none; transition: border-color 0.3s; }
+    .edit-field input:focus { border-color: rgba(255,255,255,0.2); }
+    .edit-actions { display: flex; gap: 8px; margin-top: 24px; justify-content: flex-end; }
+    .btn { padding: 8px 20px; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s; }
+    .btn-cancel { background: none; border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+    .btn-cancel:hover { border-color: rgba(255,255,255,0.2); }
+    .btn-save { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); }
+    .btn-save:hover { background: rgba(255,255,255,0.12); }
+    @media (max-width: 768px) { .header { padding: 20px 24px; } .container { padding: 32px 20px 60px; } .status-grid { grid-template-columns: repeat(2, 1fr); } .page-title { font-size: 12px; letter-spacing: 5px; } }
+    @media (max-width: 480px) { .status-grid { grid-template-columns: 1fr; } }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+    .password-gate { position: fixed; inset: 0; background: #0a0a0a; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+    .password-gate.unlocked { opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
+    .gate-logo { width: 120px; height: auto; opacity: 1; margin-bottom: 8px; filter: invert(1); }
+    .gate-logo img { width: 100%; height: auto; display: block; }
+    .gate-title { font-family: "Playfair Display", serif; font-size: 14px; font-weight: 500; letter-spacing: 6px; text-transform: uppercase; color: rgba(255,255,255,0.35); margin-bottom: 24px; }
+    .gate-input-wrapper { position: relative; width: 340px; }
+    .gate-input { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 14px 20px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 400; color: rgba(255,255,255,0.5); letter-spacing: normal; text-align: center; outline: none; transition: border-color 0.3s, background 0.3s; }
+    .gate-input::placeholder { color: rgba(255,255,255,0.3); letter-spacing: normal; }
+    .gate-input:focus { border-color: rgba(255,255,255,0.18); background: rgba(255,255,255,0.05); }
+    .gate-error { font-size: 11px; font-weight: 300; color: #f87171; letter-spacing: 0.5px; margin-top: 12px; opacity: 0; transition: opacity 0.3s; }
+    .gate-error.visible { opacity: 1; }
+    .gate-hint { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.15); letter-spacing: 5px; text-transform: uppercase; margin-top: 24px; }
+    .dashboard-content { display: none; }
+    .dashboard-content.visible { display: block; }
+    .loading-msg { text-align: center; padding: 40px; color: rgba(255,255,255,0.3); font-size: 13px; letter-spacing: 1px; }
+    .icon-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 6px; margin-top: 6px; max-width: 100%; overflow: hidden; box-sizing: border-box; }
+    .icon-option { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); cursor: pointer; transition: all 0.2s; color: rgba(255,255,255,0.3); }
+    .icon-option:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); }
+    .icon-option.selected { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.9); }
+    .icon-option svg { width: 16px; height: 16px; }
+  </style>
+</head>
+<body>
+  <div class="password-gate" id="passwordGate">
+    <div class="gate-logo"><img id="gateLogo" src="https://whathappenedtogod.co/cdn/shop/files/OVD_BLACK_TRANSPARENT.png" alt="OVD"></div>
+    <div class="gate-title">Internal Access</div>
+    <div class="gate-input-wrapper">
+      <input type="password" class="gate-input" id="gatePassword" placeholder="Enter password" autocomplete="off" autofocus>
+    </div>
+    <div class="gate-error" id="gateError">Incorrect password</div>
+    <div class="gate-hint">STAFF ONLY</div>
+  </div>
+  <div class="dashboard-content" id="dashboardContent">
+    <header class="header">
+      <div class="header-left">
+        <div class="logo"><img id="headerLogo" src="https://whathappenedtogod.co/cdn/shop/files/OVD_BLACK_TRANSPARENT.png" alt="OVD" style="width:100%;height:100%;object-fit:contain;"></div>
+      </div>
+      <div class="header-right">
+        <div class="header-date" id="headerDate"></div>
+        <div class="header-time" id="headerTime"></div>
+        <div class="header-location" id="headerLocation">Old Bridge, United States</div>
+      </div>
+    </header>
+    <main class="container">
+      <h1 class="page-title">WHATHAPPENEDTOGOD &mdash; INTERNAL</h1>
+      <div class="search-container"><div class="search-wrapper">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search tools..." autocomplete="off">
+      </div></div>
+      <div class="status-grid">
+        <a href="https://admin.shopify.com/store/whathappenedtogod" target="_blank" class="status-card">
+          <div class="status-label"><span class="status-dot dot-green"></span>Shopify Orders</div>
+          <div class="status-value">View orders</div>
+        </a>
+        <a href="https://mail.google.com" target="_blank" class="status-card">
+          <div class="status-label"><span class="status-dot dot-green"></span>Emails</div>
+          <div class="status-value">View inbox</div>
+        </a>
+        <div class="status-card">
+          <div class="status-label"><span class="status-dot dot-green"></span>Last Deploy</div>
+          <div class="status-value" id="deployTime">Apr 13, 2026</div>
+        </div>
+        <div class="status-card">
+          <div class="status-label"><span class="status-dot dot-green"></span>Site Status</div>
+          <div class="status-value">Live on Netlify</div>
+        </div>
+      </div>
+      <div id="sections"><div class="loading-msg">Loading links...</div></div>
+    </main>
+    <div class="edit-overlay" id="editOverlay">
+      <div class="edit-modal">
+        <h3 id="modalTitle">Edit Link</h3>
+        <div class="edit-field"><label>Title</label><input type="text" id="editName" placeholder="Link name"></div>
+        <div class="edit-field"><label>URL</label><input type="text" id="editUrl" placeholder="https://..."></div>
+        <div class="edit-field"><label>Type</label><input type="text" id="editType" placeholder="e.g. NOTION, SHEET, FIGMA"></div>
+        <div class="edit-field"><label>Icon</label><div class="icon-picker" id="iconPicker"></div></div>
+        <div class="edit-actions">
+          <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-save" onclick="saveEdit()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- SUPABASE ---
+    const SUPABASE_URL = 'https://bvftcotmjmoijunnpjdh.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2ZnRjb3Rtam1vaWp1bm5wamRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNDgyODYsImV4cCI6MjA5MTYyNDI4Nn0.GJJGIjhjkQGF-ROJjHbrL0qrbubonpl5H6guKBzCO6E';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // --- PASSWORD GATE ---
+    const PASS_HASH = 'c435149002a1bbd4e2f4e837b16e10783843095212690cdda4e48e33d3e82028';
+    async function sha256(str) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    const gateInput = document.getElementById('gatePassword');
+    const gateError = document.getElementById('gateError');
+    const gate = document.getElementById('passwordGate');
+    const dashContent = document.getElementById('dashboardContent');
+
+    if (sessionStorage.getItem('ovd_auth') === 'true') {
+      gate.style.display = 'none';
+      dashContent.classList.add('visible');
+      loadLinks();
+    }
+    gateInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        const hash = await sha256(gateInput.value);
+        if (hash === PASS_HASH) {
+          sessionStorage.setItem('ovd_auth', 'true');
+          gate.classList.add('unlocked');
+          dashContent.classList.add('visible');
+          setTimeout(() => { gate.style.display = 'none'; }, 500);
+          loadLinks();
+        } else {
+          gateError.classList.add('visible');
+          gateInput.value = '';
+          setTimeout(() => { gateError.classList.remove('visible'); }, 2000);
+        }
+      }
+    });
+
+    // --- ICONS ---
+    const icons = {
+      document: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+      table: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>',
+      shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+      chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+      palette: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/><circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/><circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/><circle cx="6.5" cy="12.5" r="0.5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>',
+      folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>',
+      code: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg>',
+      globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>',
+      mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+      camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>',
+      box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27,6.96 12,12.01 20.73,6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>',
+      truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16,8 20,8 23,11 23,16 16,16 16,8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+      dollar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
+      tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+      users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>',
+      star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26 12,2"/></svg>',
+      lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>',
+      link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>',
+      zap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13,2 3,14 12,14 11,22 21,10 12,10 13,2"/></svg>',
+      settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+      heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>',
+      phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>',
+      shopping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>',
+      image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>',
+    };
+
+    // --- CLOCK ---
+    function updateClock() {
+      const now = new Date();
+      const days = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+      const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+      document.getElementById('headerDate').textContent = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+      const h = now.getHours(), m = String(now.getMinutes()).padStart(2,'0'), s = String(now.getSeconds()).padStart(2,'0');
+      const ampm = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12;
+      document.getElementById('headerTime').textContent = String(h12).padStart(2,'0') + ':' + m + ':' + s + ' ' + ampm;
+    }
+    updateClock(); setInterval(updateClock, 1000);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        try {
+          const resp = await fetch('https://nominatim.openstreetmap.org/reverse?lat='+pos.coords.latitude+'&lon='+pos.coords.longitude+'&format=json');
+          const data = await resp.json();
+          const city = data.address.city || data.address.town || data.address.village || '';
+          const country = data.address.country || '';
+          if (city || country) document.getElementById('headerLocation').textContent = [city, country].filter(Boolean).join(', ');
+        } catch(e) {}
+      });
+    }
+
+    // --- SUPABASE CRUD ---
+    let allLinks = [];
+    let editingId = null;
+    let addingSection = null;
+    const SECTION_ORDER = ['OPERATIONS', 'MARKETING', 'FINANCE', 'DEVELOPMENT'];
+
+    async function loadLinks() {
+      const { data, error } = await sb.from('dashboard_links').select('*').order('sort_order', { ascending: true });
+      if (error) { console.error(error); return; }
+      allLinks = data || [];
+      render();
+    }
+
+    function render(filter) {
+      const container = document.getElementById('sections');
+      const lf = (filter || '').toLowerCase();
+      let html = '';
+      SECTION_ORDER.forEach(sec => {
+        let links = allLinks.filter(l => l.section === sec);
+        if (lf) links = links.filter(l => l.name.toLowerCase().includes(lf) || l.type.toLowerCase().includes(lf));
+        if (links.length === 0 && lf) return;
+        html += '<div class="section"><div class="section-title">' + sec + '</div>';
+        const secLinks = lf ? links : allLinks.filter(l => l.section === sec);
+        secLinks.forEach((link, idx) => {
+          let href = link.url && link.url !== '#' ? link.url : '#';
+          if (href !== '#' && !href.match(/^https?:\/\//i)) href = 'https://' + href;
+          const target = href !== '#' ? ' target="_blank"' : '';
+          const upBtn = idx > 0 ? '<button class="action-btn" onclick="event.preventDefault();event.stopPropagation();moveLink(\'' + link.id + '\',-1)" title="Move up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18,15 12,9 6,15"/></svg></button>' : '';
+          const downBtn = idx < secLinks.length - 1 ? '<button class="action-btn" onclick="event.preventDefault();event.stopPropagation();moveLink(\'' + link.id + '\',1)" title="Move down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,9 12,15 18,9"/></svg></button>' : '';
+          html += '<a href="' + href + '"' + target + ' class="link-row" onclick="handleRowClick(event,\'' + link.id + '\')">' +
+            '<div class="link-row-left"><span class="link-icon">' + (icons[link.icon] || icons.document) + '</span><span class="link-name">' + link.name + '</span></div>' +
+            '<div class="link-actions">' + upBtn + downBtn + '<button class="action-btn" onclick="event.preventDefault();event.stopPropagation();openEdit(\'' + link.id + '\')">Edit</button>' +
+            '<button class="action-btn delete" onclick="event.preventDefault();event.stopPropagation();deleteLink(\'' + link.id + '\')">Delete</button></div>' +
+            '<span class="link-type">' + link.type + '</span></a>';
+        });
+        if (!lf) {
+          html += '<div class="add-link" onclick="openAdd(\'' + sec + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> ADD LINK</div>';
+        }
+        html += '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    function handleRowClick(e, id) {
+      const link = allLinks.find(l => l.id === id);
+      if (!link || !link.url || link.url === '#') e.preventDefault();
+    }
+
+    document.getElementById('searchInput').addEventListener('input', (e) => render(e.target.value));
+
+    let selectedIcon = 'document';
+
+    function buildIconPicker(currentIcon) {
+      const picker = document.getElementById('iconPicker');
+      selectedIcon = currentIcon || 'document';
+      picker.innerHTML = '';
+      Object.keys(icons).forEach(key => {
+        const opt = document.createElement('div');
+        opt.className = 'icon-option' + (key === selectedIcon ? ' selected' : '');
+        opt.innerHTML = icons[key];
+        opt.title = key;
+        opt.onclick = () => {
+          picker.querySelectorAll('.icon-option').forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+          selectedIcon = key;
+        };
+        picker.appendChild(opt);
+      });
+    }
+
+    function openEdit(id) {
+      editingId = id; addingSection = null;
+      const link = allLinks.find(l => l.id === id);
+      document.getElementById('modalTitle').textContent = 'Edit Link';
+      document.getElementById('editName').value = link.name;
+      document.getElementById('editUrl').value = link.url;
+      document.getElementById('editType').value = link.type;
+      buildIconPicker(link.icon);
+      document.getElementById('editOverlay').classList.add('active');
+    }
+
+    function openAdd(section) {
+      editingId = null; addingSection = section;
+      document.getElementById('modalTitle').textContent = 'Add Link';
+      document.getElementById('editName').value = '';
+      document.getElementById('editUrl').value = '#';
+      document.getElementById('editType').value = '';
+      buildIconPicker('document');
+      document.getElementById('editOverlay').classList.add('active');
+    }
+
+    function closeModal() { document.getElementById('editOverlay').classList.remove('active'); }
+
+    async function saveEdit() {
+      const name = document.getElementById('editName').value.trim();
+      const url = document.getElementById('editUrl').value.trim() || '#';
+      const type = document.getElementById('editType').value.trim().toUpperCase();
+      if (!name) return;
+      const icon = selectedIcon || 'document';
+      if (addingSection) {
+        const maxSort = allLinks.filter(l => l.section === addingSection).reduce((m, l) => Math.max(m, l.sort_order || 0), -1);
+        await sb.from('dashboard_links').insert({ section: addingSection, name, url, type, icon, sort_order: maxSort + 1 });
+      } else if (editingId) {
+        await sb.from('dashboard_links').update({ name, url, type, icon, updated_at: new Date().toISOString() }).eq('id', editingId);
+      }
+      closeModal();
+      await loadLinks();
+    }
+
+    async function deleteLink(id) {
+      await sb.from('dashboard_links').delete().eq('id', id);
+      await loadLinks();
+    }
+
+    async function moveLink(id, direction) {
+      const link = allLinks.find(l => l.id === id);
+      if (!link) return;
+      const secLinks = allLinks.filter(l => l.section === link.section);
+      const idx = secLinks.findIndex(l => l.id === id);
+      const swapIdx = idx + direction;
+      if (swapIdx < 0 || swapIdx >= secLinks.length) return;
+      const other = secLinks[swapIdx];
+      const tempOrder = link.sort_order;
+      await sb.from('dashboard_links').update({ sort_order: other.sort_order }).eq('id', link.id);
+      await sb.from('dashboard_links').update({ sort_order: tempOrder }).eq('id', other.id);
+      await loadLinks();
+    }
+
+    document.getElementById('editOverlay').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+  </script>
+</body>
+</html>
