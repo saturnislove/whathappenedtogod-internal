@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>OVD — Feed Planner</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="theme-color" id="themeColor" content="#0a0a0a">
+<style>
+  :root{
+    --bg:#0a0a0a; --bg-rgb:10,10,10; --fg-rgb:245,245,247;
+    --card:#0d0d0d; --line:rgba(245,245,247,0.09); --line-hi:rgba(245,245,247,0.24);
+    --tx:#f5f5f7; --tx2:rgba(245,245,247,0.62); --tx3:rgba(245,245,247,0.34);
+    --shadow:none; --img:#141414; --ok:#4ade80; --err:#ff9f0a;
+  }
+  html.light{
+    --bg:#fff; --bg-rgb:255,255,255; --fg-rgb:29,29,31;
+    --card:#fff; --line:rgba(0,0,0,0.09); --line-hi:rgba(0,0,0,0.26);
+    --tx:#1d1d1f; --tx2:rgba(29,29,31,0.64); --tx3:rgba(29,29,31,0.42);
+    --shadow:0 1px 3px rgba(0,0,0,0.06); --img:#f1f1f3; --ok:#15803d; --err:#b45309;
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--tx);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5;overflow-x:hidden;
+    padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+  body.dragging::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:25;
+    border:3px dashed var(--ok);background:rgba(74,222,128,.06)}
+
+  .bar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;overflow:hidden;
+    padding:calc(11px + env(safe-area-inset-top)) 20px 11px;border-bottom:1px solid var(--line);
+    background:rgba(var(--bg-rgb),.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+  .bar .t{flex:1;min-width:0;font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:var(--tx2);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sv{flex:0 1 auto;min-width:0;font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .3s}
+  .sv.show{opacity:1}
+  .sv.bad{color:var(--err)}
+  .tbtn{border:1px solid var(--line);border-radius:980px;background:none;color:var(--tx2);
+    font:inherit;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;padding:8px 14px;
+    cursor:pointer;white-space:nowrap;transition:all .2s;-webkit-tap-highlight-color:transparent}
+  .tbtn:hover{color:var(--tx);border-color:var(--line-hi)}
+  .tbtn.on{color:var(--tx);border-color:var(--line-hi);background:rgba(var(--fg-rgb),.06)}
+  .tbtn.go{color:var(--bg);background:var(--tx);border-color:var(--tx)}
+  .tbtn.go:hover{opacity:.85}
+  .tbtn:disabled{opacity:.45;cursor:default}
+  @media(max-width:700px){
+    .bar{flex-wrap:wrap;gap:8px;padding-left:14px;padding-right:14px}
+    .bar .t{flex:1 1 100%}
+    .sv{flex:1 1 100%;order:9}
+    .tbtn{padding:7px 11px;font-size:9.5px}
+  }
+
+  .wrap{max-width:960px;margin:0 auto;padding:30px 20px calc(70px + env(safe-area-inset-bottom))}
+
+  /* profile header — instagram's proportions, so the mock reads like the real thing */
+  .prof{display:flex;gap:34px;align-items:flex-start;padding-bottom:28px;border-bottom:1px solid var(--line)}
+  .prof .av{width:132px;height:132px;border-radius:50%;object-fit:cover;background:var(--img);flex:none;cursor:pointer}
+  .prof .avph{width:132px;height:132px;border-radius:50%;background:var(--img);flex:none;cursor:pointer}
+  .prof .r{flex:1;min-width:0}
+  .prof .u{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .prof .u b{font-size:19px;font-weight:400;letter-spacing:-.2px;overflow-wrap:anywhere}
+  .ebtn{font:inherit;font-size:12.5px;font-weight:600;padding:6px 14px;border-radius:8px;
+    border:1px solid var(--line-hi);background:rgba(var(--fg-rgb),.06);color:var(--tx);cursor:pointer;
+    -webkit-tap-highlight-color:transparent;transition:background .2s}
+  .ebtn:hover{background:rgba(var(--fg-rgb),.12)}
+  .stats{display:flex;gap:34px;margin:20px 0 18px;font-size:14px}
+  .stats b{font-weight:600;font-variant-numeric:tabular-nums}
+  .stats span{color:var(--tx2)}
+  .nm{font-size:13.5px;font-weight:600;overflow-wrap:anywhere}
+  .bio{font-size:13.5px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+  .bio a{color:#4a7dff;text-decoration:none}
+  .mk{display:inline-block;font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ok);
+    border:1px solid var(--ok);border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:middle}
+  .warn{margin:0 0 14px;padding:10px 14px;border:1px solid var(--err);border-radius:10px;color:var(--err);
+    font-size:12px;line-height:1.5}
+  .warn:empty{display:none}
+  @media(max-width:640px){
+    .prof{gap:18px}
+    .prof .av,.prof .avph{width:80px;height:80px}
+    .stats{gap:22px;font-size:13px;margin:14px 0 12px}
+    .prof .u b{font-size:16px}
+  }
+
+  .tabs{display:flex;justify-content:center;gap:44px;border-top:1px solid var(--line);margin-top:-1px}
+  .tab{padding:15px 4px;font-size:10px;letter-spacing:2.2px;text-transform:uppercase;color:var(--tx3);
+    border-top:1px solid transparent;margin-top:-1px}
+  .tab.on{color:var(--tx);border-top-color:var(--tx)}
+
+  /* the add strip sits ABOVE the grid, where a new post lands, so it is never below the fold */
+  .drop{border:1.5px dashed var(--line-hi);border-radius:12px;padding:13px 16px;text-align:center;
+    color:var(--tx3);font-size:12px;letter-spacing:.3px;cursor:pointer;margin:0 0 6px;
+    transition:border-color .2s,color .2s,background .2s}
+  .drop:hover,.drop.hot,body.dragging .drop{border-color:var(--ok);color:var(--tx2);background:rgba(74,222,128,.05)}
+  .drop b{color:var(--tx2);font-weight:500}
+
+  /* instagram's grid is 4:5 portrait now, not square */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:4px}
+  @media(min-width:900px){.grid{gap:6px}}
+  .cell{position:relative;aspect-ratio:4/5;background:var(--img);overflow:hidden;cursor:pointer}
+  .cell img{width:100%;height:100%;object-fit:cover;display:block}
+  .cell .k{position:absolute;top:7px;right:8px;color:#fff;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6));
+    font-size:12px;line-height:1}
+  .cell .ov{position:absolute;inset:0;background:rgba(0,0,0,.42);opacity:0;display:flex;
+    align-items:center;justify-content:center;gap:18px;color:#fff;font-size:13px;font-weight:600;
+    transition:opacity .18s}
+  .cell:hover .ov{opacity:1}
+  .cell.mock{outline:2px solid var(--ok);outline-offset:-2px}
+  .cell .mtag{position:absolute;left:0;bottom:0;background:var(--ok);color:#04140a;font-size:8.5px;
+    letter-spacing:1.4px;text-transform:uppercase;font-weight:700;padding:3px 7px}
+  .cell .rm{position:absolute;top:6px;left:6px;width:22px;height:22px;border-radius:50%;
+    background:rgba(0,0,0,.62);color:#fff;font-size:12px;display:none;align-items:center;
+    justify-content:center;cursor:pointer;backdrop-filter:blur(4px)}
+  .cell.mock:hover .rm{display:flex}
+  .cell.drag{opacity:.35}
+  .cell.over{outline:2px dashed var(--ok);outline-offset:-2px}
+  .cell.add{display:flex;align-items:center;justify-content:center;background:none;
+    border:1.5px dashed var(--line-hi);color:var(--tx3);font-size:34px;font-weight:200}
+  .cell.add:hover{border-color:var(--ok);color:var(--tx2)}
+  .cell.up{display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:10px;
+    letter-spacing:2px;text-transform:uppercase}
+
+  .note{font-size:11px;color:var(--tx3);line-height:1.55;margin-top:14px}
+  .msg{text-align:center;padding:80px 20px;color:var(--tx3);font-size:13px}
+  .err{color:var(--err)}
+
+  /* lightbox: a mock gets its own controls here (type badge, remove); a live post links out */
+  .lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:60;
+    align-items:center;justify-content:center;cursor:zoom-out;padding:24px}
+  .lb.on{display:flex}
+  .lbin{display:flex;flex-direction:column;align-items:center;gap:14px;max-width:92vw;max-height:100%;
+    overflow-y:auto;cursor:default}
+  .lb img{max-width:92vw;max-height:66vh;border-radius:8px;flex:none}
+  .lb .cap{max-width:80vw;text-align:center;font-size:12px;color:rgba(255,255,255,.72);line-height:1.5}
+  .lb .acts{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;flex:none}
+  .lb .acts .tbtn{color:rgba(255,255,255,.72);border-color:rgba(255,255,255,.22)}
+  .lb .acts .tbtn:hover{color:#fff;border-color:rgba(255,255,255,.5)}
+  .lb .acts .tbtn.on{color:#fff;background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.4)}
+  .lb .acts .tbtn.danger{color:#ff6b6b;border-color:rgba(255,107,107,.4)}
+
+  /* profile editor */
+  .ed{display:none;position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.6);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;
+    padding:calc(20px + env(safe-area-inset-top)) 20px 20px}
+  .ed.on{display:flex}
+  .edp{width:min(520px,100%);max-height:100%;display:flex;flex-direction:column;background:var(--card);
+    border:1px solid var(--line-hi);border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+  .edh{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;
+    border-bottom:1px solid var(--line);font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:var(--tx2)}
+  .edb{padding:18px 20px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+  .edb label{display:flex;flex-direction:column;gap:6px;font-size:9.5px;letter-spacing:1.8px;
+    text-transform:uppercase;color:var(--tx3)}
+  .edb input,.edb textarea{font:inherit;font-size:16px;color:var(--tx);background:rgba(var(--fg-rgb),.04);
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none;letter-spacing:0;
+    text-transform:none;width:100%;resize:vertical}
+  .edb input:focus,.edb textarea:focus{border-color:var(--line-hi)}
+  .edb input::placeholder,.edb textarea::placeholder{color:var(--tx3)}
+  .edrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .edav{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .edav img{width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--img)}
+  .edf{display:flex;gap:8px;align-items:center;padding:14px 20px calc(14px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);background:rgba(var(--bg-rgb),.7);backdrop-filter:blur(14px)}
+  .edf .sp{flex:1}
+  @media(max-width:640px){
+    .ed{padding:calc(12px + env(safe-area-inset-top)) 0 0;align-items:flex-end}
+    .edp{border-radius:18px 18px 0 0}
+    .edrow{grid-template-columns:1fr 1fr}
+  }
+
+  /* login gate — same shape as the hub's, kept in this page's monochrome */
+  .pw-gate{position:fixed;inset:0;z-index:99999;background:#050505;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:0;padding:calc(24px + env(safe-area-inset-top)) 24px 24px;
+    transition:opacity .5s,visibility .5s}
+  .pw-gate.hidden{display:none!important;opacity:0;visibility:hidden;pointer-events:none}
+  .pw-logo{width:110px;margin:0 0 14px}
+  .pw-logo img{width:100%;height:auto;display:block}
+  .pw-title{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:22px}
+  .pw-input{width:min(280px,80vw);background:transparent;border:1px solid rgba(255,255,255,.14);border-radius:0;
+    color:#fff;font:inherit;font-size:16px;padding:12px 14px;text-align:center;outline:none;box-shadow:none;
+    -webkit-tap-highlight-color:transparent;transition:border-color .2s}
+  .pw-input::placeholder{color:rgba(255,255,255,.3)}
+  .pw-input:focus,.pw-input:focus-visible{border-color:rgba(255,255,255,.35);outline:none;box-shadow:none}
+  .pw-input.shake{animation:ovdGateShake .45s ease}
+  @keyframes ovdGateShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+  .pw-subtitle{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-top:22px}
+</style>
+</head>
+<body>
+<!-- LOGIN GATE -->
+<div class="pw-gate" id="pwGate">
+  <div class="pw-logo">
+    <img src="https://whathappenedtogod.co/cdn/shop/files/OVD_BLACK_TRANSPARENT.png" alt="OVD">
+  </div>
+  <div class="pw-title">INTERNAL ACCESS</div>
+  <input type="text" class="pw-input" id="pwEmail" placeholder="Username" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-bottom:10px">
+  <input type="password" class="pw-input" id="pwInput" placeholder="Password" autocomplete="current-password">
+  <div class="pw-subtitle">STAFF ONLY</div>
+</div>
+
+<div class="bar">
+  <div class="t" id="barTitle">FEED PLANNER</div>
+  <span class="sv" id="sv"></span>
+  <button class="tbtn go" onclick="pickFiles()">+ add post</button>
+  <button class="tbtn" id="mockBtn" onclick="toggleMocks()">mocks</button>
+  <button class="tbtn" id="liveBtn" onclick="toggleLive()">live</button>
+  <button class="tbtn" onclick="openEd()">edit profile</button>
+  <button class="tbtn" onclick="load(true)">&#8635; sync</button>
+  <button class="tbtn" onclick="toggleTheme()" id="thBtn">light</button>
+</div>
+
+<div class="wrap">
+  <div class="warn" id="warn"></div>
+  <div id="head"><div class="msg">loading the feed…</div></div>
+  <div class="tabs"><div class="tab on">Posts</div></div>
+  <div class="drop" id="drop">
+    <b>+ add a post</b> &middot; drop photos anywhere, click to choose, or paste with &#8984;V &middot; new posts land at the top
+  </div>
+  <div class="grid" id="grid"></div>
+  <input type="file" id="file" accept="image/*" multiple style="display:none">
+  <input type="file" id="avFile" accept="image/*" style="display:none">
+  <div class="note" id="note"></div>
+</div>
+
+<div class="lb" id="lb" onclick="closeLb()">
+  <div class="lbin" onclick="event.stopPropagation()">
+    <img id="lbImg" alt="">
+    <div class="cap" id="lbCap"></div>
+    <div class="acts" id="lbActs"></div>
+  </div>
+</div>
+
+<div class="ed" id="ed">
+  <div class="edp">
+    <div class="edh"><span>Edit profile</span><button class="tbtn" onclick="closeEd()">close</button></div>
+    <div class="edb">
+      <label>Photo
+        <div class="edav">
+          <img id="edAv" alt="">
+          <button class="tbtn" onclick="document.getElementById('avFile').click()">upload</button>
+          <button class="tbtn" onclick="edAvatar(null)">use live</button>
+        </div>
+      </label>
+      <label>Username <input id="edUser" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <label>Name <input id="edName"></label>
+      <label>Bio <textarea id="edBio" rows="5"></textarea></label>
+      <label>Website <input id="edSite" inputmode="url" autocapitalize="off"></label>
+      <div class="edrow">
+        <label>Posts <input id="edPosts" type="number" inputmode="numeric" min="0"></label>
+        <label>Followers <input id="edFol" type="number" inputmode="numeric" min="0"></label>
+        <label>Following <input id="edFing" type="number" inputmode="numeric" min="0"></label>
+      </div>
+      <div class="note" style="margin-top:0">Empty fields show the live value from Instagram. Anything you type here is only in the planner — nothing changes on Instagram.</div>
+    </div>
+    <div class="edf">
+      <button class="tbtn" onclick="resetProfile()">use live for all</button>
+      <span class="sp"></span>
+      <button class="tbtn" onclick="closeEd()">cancel</button>
+      <button class="tbtn go" id="edSave" onclick="saveEd()">save</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ===================== LOGIN (Supabase Auth — the same account as the hub) =====================
+// ovd-ig refuses anything but a signed-in session, so the page opens only after ovd-login.
+const SB_URL = 'https://bvftcotmjmoijunnpjdh.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2ZnRjb3Rtam1vaWp1bm5wamRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwNDgyODYsImV4cCI6MjA5MTYyNDI4Nn0.GJJGIjhjkQGF-ROJjHbrL0qrbubonpl5H6guKBzCO6E';
+const sbAuth = supabase.createClient(SB_URL, SB_ANON);
+let SUP_TOKEN = null;
+const pwGate = document.getElementById('pwGate');
+const pwInput = document.getElementById('pwInput');
+const pwEmail = document.getElementById('pwEmail');
+let feedOpened = false;
+function openWith(session){
+  if (!session || !session.access_token) return;
+  SUP_TOKEN = session.access_token;
+  if (feedOpened) return;
+  feedOpened = true;
+  pwGate.classList.add('hidden');
+  if (typeof boot === 'function') boot();
+}
+sbAuth.auth.onAuthStateChange(function(_e, s){ if (s && s.access_token) SUP_TOKEN = s.access_token; });
+sbAuth.auth.getSession().then(function(r){ openWith(r && r.data && r.data.session); });
+try { pwEmail.value = localStorage.getItem('ovd_login_user') || ''; } catch (e) {}
+// username → account happens server-side (ovd-login), so this page never carries an email
+async function supSignIn(){
+  const user = (pwEmail.value || '').trim(), pw = pwInput.value;
+  if (!user || !pw) return;
+  pwInput.disabled = true;
+  let j = null;
+  try {
+    const res = await fetch(SB_URL + '/functions/v1/ovd-login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pw }) });
+    j = await res.json();
+  } catch (e) { j = null; }
+  const r = (j && j.access_token) ? await sbAuth.auth.setSession({ access_token: j.access_token, refresh_token: j.refresh_token }) : { error: true };
+  pwInput.disabled = false;
+  if (r.error || !r.data || !r.data.session) {
+    pwInput.classList.add('shake');
+    setTimeout(() => pwInput.classList.remove('shake'), 500);
+    pwInput.value = '';
+    return;
+  }
+  try { localStorage.setItem('ovd_login_user', user); } catch (e) {}
+  openWith(r.data.session);
+}
+pwInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') supSignIn(); });
+pwEmail.addEventListener('keydown', function(e){ if (e.key === 'Enter') pwInput.focus(); });
+</script>
+<script>
+// OVD OS single sign-on: when embedded in whathappenedtogod.dev, inherit its session
+(function(){
+  if (window.parent === window) return;
+  var OK = ['https://whathappenedtogod.dev', 'http://localhost:8899', 'http://localhost:4771'];
+  window.addEventListener('message', async function(ev){
+    if (OK.indexOf(ev.origin) === -1) return;
+    var d = ev.data;
+    if (!d || d.type !== 'ovd-os-auth' || !d.access_token) return;   // the hub hands over its real session; a bare string opens nothing
+    var r = null;
+    try { r = await sbAuth.auth.setSession({ access_token: d.access_token, refresh_token: d.refresh_token }); } catch (e) {}
+    // setSession may have refreshed the token; use the session it settled on, not the raw one
+    openWith((r && r.data && r.data.session) || { access_token: d.access_token });
+  });
+  window.parent.postMessage('ovd-os-ready', '*');
+})();
+</script>
+<script>
+const API = SB_URL + '/functions/v1/ovd-ig';
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const nf = n => (n == null || n === '') ? '—' : Number(n).toLocaleString();
+const $ = id => document.getElementById(id);
+
+/* ---------------------------------------------------------------------------------------
+   STATE lives in the backend, not this browser: one row in catalog_meta (k = feed_mockup)
+   holds the mock list, the profile overrides and the two toggles, and the mock photos sit
+   in the `planner` storage bucket (public read, owner-only write — the same bucket the drop
+   map uses). So what she plans on the laptop is what she sees on her phone.
+
+   Rules that keep that row safe:
+     * nothing is ever written unless the row was READ first in this session (a failed or
+       signed-out read must not turn into a blank row that wipes her plan)
+     * every write is a compare-and-set on updated_at; if another device wrote in between,
+       its row is merged in before ours goes up, so two tabs can't erase each other
+     * the row is re-read on sync and whenever the tab comes back to the front
+
+   The LIVE post urls are still never stored: Instagram signs them and they rot within
+   hours, so a persisted grid would come back tomorrow as a wall of broken tiles.
+   --------------------------------------------------------------------------------------- */
+const STATE_KEY = 'feed_mockup';
+const BUCKET = 'planner', DIR = 'feed';
+const blank = () => ({ mocks: [], profile: {}, showMocks: true, hideLive: false });
+let FEED = null, ST = null, stateReady = null, lastSeen = null, lastRead = 0;
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const clone = o => JSON.parse(JSON.stringify(o));
+
+let svT = null;
+function sv(text, bad){
+  const el = $('sv');
+  el.textContent = text || '';
+  el.title = text || '';
+  el.classList.toggle('bad', !!bad);
+  el.classList.toggle('show', !!text);
+  clearTimeout(svT);
+  if (text && !bad) svT = setTimeout(() => el.classList.remove('show'), 2600);
+}
+function note(t){ $('note').innerHTML = t; }
+function warn(t){ $('warn').innerHTML = t || ''; }
+
+const normalise = v => {
+  const s = Object.assign(blank(), v || {});
+  if (!Array.isArray(s.mocks)) s.mocks = [];
+  s.mocks = s.mocks.filter(m => m && m.id && m.url);
+  if (!s.profile || typeof s.profile !== 'object') s.profile = {};
+  return s;
+};
+async function readRow(){
+  const { data, error } = await sbAuth.from('catalog_meta').select('v,updated_at').eq('k', STATE_KEY).maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+// resolves true when the row was read (or confirmed absent) with a real session; false otherwise
+async function loadState(){
+  if (!SUP_TOKEN) return false;             // an anonymous read comes back empty under RLS — never trust it
+  try {
+    const row = await readRow();
+    ST = normalise(row && row.v);
+    lastSeen = row ? row.updated_at : null;
+    lastRead = Date.now();
+    warn('');
+  } catch (e) {
+    ST = null; lastSeen = null;
+    warn('could not read your saved mocks — ' + esc(e.message || e) + '. Nothing will be saved until <b>sync</b> works again.');
+    return false;
+  }
+  await migrateLocal();
+  return true;
+}
+function ensureState(){
+  if (!stateReady) stateReady = loadState().then(ok => { if (!ok) stateReady = null; return ok; });
+  return stateReady;
+}
+async function refreshState(){
+  // re-read the row (sync button, tab back in front) and repaint; local unsaved edits are
+  // not a thing here — every change saves as it happens — so the backend copy always wins
+  stateReady = null;
+  const ok = await ensureState();
+  if (ok) { paintBtns(); paint(); }
+  return ok;
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && ST && Date.now() - lastRead > 30000 && !saving) refreshState();
+});
+
+/* merge a row another device wrote with what this tab holds: their mocks we don't know
+   about are kept (after ours), everything else is ours since we are the one editing now */
+function mergeState(theirs, ours){
+  const t = normalise(theirs), o = normalise(ours);
+  const have = new Set(o.mocks.map(m => m.id)), gone = new Set(o.removed || []);
+  const extra = t.mocks.filter(m => !have.has(m.id) && !gone.has(m.id));
+  o.mocks = o.mocks.concat(extra);
+  return o;
+}
+
+let saveT = null, saveQ = Promise.resolve(), saving = 0;
+function saveState(){
+  if (!ST) { sv('not saved — hit sync to reconnect', true); return; }
+  sv('saving…');
+  clearTimeout(saveT);
+  saveT = setTimeout(() => {
+    saving++;
+    saveQ = saveQ.then(writeState).catch(e => sv('save failed — ' + (e.message || e), true)).then(() => { saving--; });
+  }, 250);
+}
+async function writeState(){
+  if (!ST) return;
+  const tbl = () => sbAuth.from('catalog_meta');
+  const put = async (snap) => {
+    const now = new Date().toISOString();
+    if (lastSeen) {
+      const { data, error } = await tbl().update({ v: snap, updated_at: now }).eq('k', STATE_KEY).eq('updated_at', lastSeen).select('updated_at');
+      if (error) throw error;
+      if (data && data.length) return data[0].updated_at;
+      return null;                       // someone else wrote since we read
+    }
+    const { data, error } = await tbl().upsert({ k: STATE_KEY, v: snap, updated_at: now }, { onConflict: 'k' }).select('updated_at');
+    if (error) throw error;
+    return (data && data[0] && data[0].updated_at) || now;
+  };
+  let stamp = await put(clone(ST));
+  if (!stamp) {
+    const row = await readRow();
+    if (row) { ST = mergeState(row.v, ST); lastSeen = row.updated_at; paint(); }
+    else lastSeen = null;
+    stamp = await put(clone(ST));
+    if (!stamp) {                          // raced twice — take the row as it stands and write once more
+      const again = await readRow();
+      lastSeen = again ? again.updated_at : null;
+      if (again) { ST = mergeState(again.v, ST); paint(); }
+      stamp = await put(clone(ST));
+    }
+  }
+  if (stamp) { lastSeen = stamp; lastRead = Date.now(); sv('saved'); }
+  else throw new Error('could not write — reload and try again');
+}
+
+/* the old version kept mocks in localStorage as data urls; move them up once, then forget them.
+   Written back after every successful upload so a failure halfway never repeats or duplicates. */
+async function migrateLocal(){
+  let old = [];
+  try { old = JSON.parse(localStorage.getItem('ovd_feed_mocks') || '[]'); } catch (_) {}
+  if (!Array.isArray(old) || !old.length) return;
+  sv('moving ' + old.length + ' mock' + (old.length === 1 ? '' : 's') + ' to the backend…');
+  let moved = 0, failed = null;
+  while (old.length) {
+    const m = old[0];
+    if (/^data:image/.test(m.url || '')) {
+      try {
+        const blob = await (await fetch(m.url)).blob();
+        const id = uid();
+        const up = await upload(blob, id + '.jpg');
+        ST.mocks.push({ id, url: up.url, path: up.path, name: m.name || 'mock', at: m.at || Date.now(), type: 'IMAGE' });
+        moved++;
+      } catch (e) { failed = e; break; }
+    }
+    old.shift();
+    try { old.length ? localStorage.setItem('ovd_feed_mocks', JSON.stringify(old)) : localStorage.removeItem('ovd_feed_mocks'); } catch (_) {}
+  }
+  if (moved) {
+    saveState();
+    note('<b style="color:var(--ok)">moved ' + moved + ' mock' + (moved === 1 ? '' : 's') + ' from this device to the backend</b> — they now show everywhere you open the planner.');
+  }
+  if (failed) sv('could not move ' + old.length + ' mock' + (old.length === 1 ? '' : 's') + ' — ' + (failed.message || failed) + ' — will retry next time', true);
+}
+
+/* Theme. Defaults to the system preference so it matches the rest of the hub. */
+function applyTheme(light){
+  document.documentElement.classList.toggle('light', light);
+  const m = $('themeColor'); if (m) m.setAttribute('content', light ? '#ffffff' : '#0a0a0a');
+}
+(function(){
+  let saved = null;
+  try { saved = localStorage.getItem('ovd_feed_theme'); } catch (_) {}
+  const sys = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  applyTheme((saved || sys) === 'light');
+})();
+function toggleTheme(){
+  const light = !document.documentElement.classList.contains('light');
+  applyTheme(light);
+  try { localStorage.setItem('ovd_feed_theme', light ? 'light' : 'dark'); } catch (_) {}
+  paintBtns();
+}
+
+function paintBtns(){
+  const s = ST || blank();
+  $('mockBtn').classList.toggle('on', !!s.showMocks);
+  $('mockBtn').textContent = s.showMocks ? 'mocks on' : 'mocks off';
+  $('liveBtn').classList.toggle('on', !s.hideLive);
+  $('liveBtn').textContent = s.hideLive ? 'live off' : 'live on';
+  $('thBtn').textContent = document.documentElement.classList.contains('light') ? 'dark' : 'light';
+}
+function toggleMocks(){ if (!ST) return sv('not saved — hit sync to reconnect', true); ST.showMocks = !ST.showMocks; saveState(); paintBtns(); paint(); }
+function toggleLive(){ if (!ST) return sv('not saved — hit sync to reconnect', true); ST.hideLive = !ST.hideLive; saveState(); paintBtns(); paint(); }
+
+/* ---- photos: downscale, upload to the bucket, keep only the public url ---- */
+function shrink(file, max){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const sc = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.width * sc)); c.height = Math.max(1, Math.round(img.height * sc));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(b => b ? res({ blob: b, w: c.width, h: c.height }) : rej(new Error('could not encode the photo')), 'image/jpeg', 0.86);
+      };
+      img.onerror = () => rej(new Error('that file is not an image'));
+      img.src = e.target.result;
+    };
+    r.onerror = () => rej(new Error('could not read the file'));
+    r.readAsDataURL(file);
+  });
+}
+async function upload(blob, name){
+  const path = DIR + '/' + name;
+  const { error } = await sbAuth.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: true, cacheControl: '31536000' });
+  if (error) throw error;
+  return { path, url: sbAuth.storage.from(BUCKET).getPublicUrl(path).data.publicUrl };
+}
+function removeFiles(paths){
+  const ps = (paths || []).filter(Boolean);
+  if (ps.length) sbAuth.storage.from(BUCKET).remove(ps).catch(() => {});
+}
+
+function pickFiles(){ if (!SUP_TOKEN) return; $('file').click(); }
+let uploading = 0;
+async function addFiles(files){
+  if (!SUP_TOKEN) { sv('sign in first', true); return; }
+  const imgs = [...files].filter(f => /^image\//.test(f.type));
+  if (!imgs.length) { sv('no image in that', true); return; }
+  if (!(await ensureState()) || !ST) { sv('not saved — hit sync to reconnect', true); return; }
+  ST.showMocks = true;
+  let n = 0, placed = 0;
+  for (const f of imgs) {
+    uploading++; paint();
+    sv('uploading ' + (++n) + ' of ' + imgs.length + '…');
+    try {
+      const { blob, w, h } = await shrink(f, 1600);
+      const id = uid();
+      const up = await upload(blob, id + '.jpg');
+      // keep the order she picked them in: first chosen = first in the grid
+      ST.mocks.splice(placed++, 0, { id, url: up.url, path: up.path, name: f.name, at: Date.now(), type: 'IMAGE', w, h });
+    } catch (e) { sv('upload failed — ' + (e.message || e), true); }
+    uploading--; paint();
+  }
+  if (placed) saveState();
+  paintBtns(); paint();
+}
+function rmMock(id){
+  if (!ST) return;
+  const i = ST.mocks.findIndex(m => m.id === id); if (i < 0) return;
+  const [m] = ST.mocks.splice(i, 1);
+  (ST.removed = (ST.removed || []).concat(id)).splice(0, Math.max(0, ST.removed.length - 200));
+  saveState(); paint();
+  removeFiles([m.path]);
+}
+function clearMocks(){
+  if (!ST || !ST.mocks.length) return;
+  if (!confirm('Remove all ' + ST.mocks.length + ' mock' + (ST.mocks.length === 1 ? '' : 's') + '?')) return;
+  const paths = ST.mocks.map(m => m.path);
+  ST.removed = (ST.removed || []).concat(ST.mocks.map(m => m.id)).slice(-200);
+  ST.mocks = []; saveState(); paint(); closeLb();
+  removeFiles(paths);
+}
+function setMockType(id, type){
+  if (!ST) return;
+  const m = ST.mocks.find(x => x.id === id); if (!m) return;
+  m.type = type; saveState(); paint(); openLb(id, 1);
+}
+
+/* add by click, by drop ANYWHERE on the page (never let the browser navigate to the file), or by paste */
+const drop = $('drop');
+drop.onclick = pickFiles;
+$('file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+let dragDepth = 0;
+const hasFiles = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+document.addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; document.body.classList.add('dragging'); });
+document.addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault(); });
+document.addEventListener('dragleave', e => { if (!hasFiles(e)) return; if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+document.addEventListener('drop', e => {
+  if (!hasFiles(e)) return;
+  e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging');
+  if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+});
+document.addEventListener('paste', e => {
+  if (!SUP_TOKEN || $('ed').classList.contains('on')) return;   // gate up, or typing in the editor
+  const f = [...((e.clipboardData && e.clipboardData.files) || [])];
+  if (f.length) { e.preventDefault(); addFiles(f); }
+});
+
+/* reorder mocks by dragging one onto another (file drops are handled above, not here) */
+let dragFrom = null;
+function onDragStart(e, id){ dragFrom = id; e.currentTarget.classList.add('drag'); }
+function onDragOver(e){ if (dragFrom == null) return; e.preventDefault(); e.currentTarget.classList.add('over'); }
+function onDragLeave(e){ e.currentTarget.classList.remove('over'); }
+function onDrop(e, id){
+  if (dragFrom == null) return;
+  e.preventDefault(); e.stopPropagation();
+  e.currentTarget.classList.remove('over');
+  if (dragFrom === id) return;
+  const from = ST.mocks.findIndex(m => m.id === dragFrom), to = ST.mocks.findIndex(m => m.id === id);
+  if (from < 0 || to < 0) return;
+  const [m] = ST.mocks.splice(from, 1);
+  ST.mocks.splice(to, 0, m);
+  dragFrom = null; saveState(); paint();
+}
+function onDragEnd(e){ e.currentTarget.classList.remove('drag'); dragFrom = null; }
+
+/* ---- the profile the header shows: live from Instagram, with her overrides on top ---- */
+function prof(){
+  const live = (FEED && FEED.profile) || {};
+  const o = (ST && ST.profile) || {};
+  const set = k => o[k] != null && o[k] !== '';
+  const pick = k => set(k) ? o[k] : live[k];
+  const mocks = ST && ST.showMocks ? ST.mocks : [];
+  const livePosts = ST && ST.hideLive ? 0 : (live.posts || 0);
+  return {
+    username: pick('username') || 'whathappenedtogod', name: pick('name'), bio: pick('bio'), website: pick('website'),
+    avatar: pick('avatar'), followers: pick('followers'), following: pick('following'),
+    posts: set('posts') ? o.posts : livePosts + mocks.length,
+    edited: ['username','name','bio','website','avatar','followers','following','posts'].some(set),
+  };
+}
+
+const ICON = { VIDEO: '&#9654;', CAROUSEL_ALBUM: '&#10696;', IMAGE: '' };
+function paint(){
+  const s = ST || blank();
+  const feed = FEED || { profile: {}, posts: [] };
+  const mocks = s.showMocks ? s.mocks : [];
+  const live = s.hideLive ? [] : feed.posts;
+  const cells = [
+    ...(uploading ? Array.from({ length: uploading }, () => '<div class="cell up">uploading</div>') : []),
+    // when nothing is mocked yet the "+" sits top-left, exactly where the next post will land
+    ...(!mocks.length && !uploading && ST ? ['<div class="cell add" onclick="pickFiles()" title="add a post">+</div>'] : []),
+    ...mocks.map(m =>
+      '<div class="cell mock" draggable="true"' +
+        ' ondragstart="onDragStart(event,\'' + esc(m.id) + '\')" ondragover="onDragOver(event)"' +
+        ' ondragleave="onDragLeave(event)" ondrop="onDrop(event,\'' + esc(m.id) + '\')" ondragend="onDragEnd(event)"' +
+        ' onclick="openLb(\'' + esc(m.id) + '\',1)">' +
+        '<img src="' + esc(m.url) + '" alt="">' +
+        (ICON[m.type] ? '<span class="k">' + ICON[m.type] + '</span>' : '') +
+        '<span class="rm" onclick="event.stopPropagation();rmMock(\'' + esc(m.id) + '\')">&#10005;</span>' +
+        '<span class="mtag">mock</span></div>'),
+    ...live.map((p, i) =>
+      '<div class="cell" onclick="openLb(' + i + ',0)">' +
+        '<img src="' + esc(p.image) + '" loading="lazy" alt="">' +
+        (ICON[p.type] ? '<span class="k">' + ICON[p.type] + '</span>' : '') +
+        '<div class="ov">&#9825; ' + nf(p.likes) + '</div></div>'),
+  ].join('');
+  $('grid').innerHTML = cells;
+
+  const p = prof();
+  $('head').innerHTML =
+    '<div class="prof">' +
+      (p.avatar ? '<img class="av" src="' + esc(p.avatar) + '" alt="" onclick="openEd()" title="edit profile">'
+                : '<div class="avph" onclick="openEd()" title="edit profile"></div>') +
+      '<div class="r"><div class="u"><b>' + esc(p.username) + '</b>' +
+        '<button class="ebtn" onclick="openEd()">Edit profile</button>' +
+        (p.edited ? '<span class="mk">edited</span>' : '') + '</div>' +
+      '<div class="stats">' +
+        '<div><b>' + nf(p.posts) + '</b> <span>posts</span></div>' +
+        '<div><b>' + nf(p.followers) + '</b> <span>followers</span></div>' +
+        '<div><b>' + nf(p.following) + '</b> <span>following</span></div>' +
+      '</div>' +
+      (p.name ? '<div class="nm">' + esc(p.name) + '</div>' : '') +
+      '<div class="bio">' + esc(p.bio) +
+        (p.website ? (p.bio ? '<br>' : '') + '<a href="' + esc(/^https?:\/\//i.test(p.website) ? p.website : 'https://' + p.website) + '" target="_blank" rel="noopener">' +
+          esc(String(p.website).replace(/^https?:\/\//i,'').replace(/\/$/,'')) + '</a>' : '') +
+      '</div></div></div>';
+
+  $('barTitle').textContent =
+    'FEED PLANNER · @' + p.username + (mocks.length ? ' · ' + mocks.length + ' MOCKED' : '') + (s.hideLive ? ' · LIVE HIDDEN' : '');
+  const liveN = feed.posts.length;
+  note(mocks.length
+    ? '<b style="color:var(--ok)">' + mocks.length + ' mock' + (mocks.length === 1 ? '' : 's') + '</b>' +
+      (s.hideLive ? ' on their own — live posts are hidden.' : ' sitting above ' + liveN + ' live posts — green outline marks what is not real yet.') +
+      ' Drag a mock onto another to reorder, tap one to mark it a reel or carousel or to remove it. Saved to the backend, so this is the same on every device.'
+    : s.hideLive
+      ? 'Live posts are hidden. Add a photo to see it on an empty grid, or turn live back on.'
+      : liveN
+        ? 'Showing the ' + liveN + ' most recent live posts. Add a photo to see how it would sit — it lands at the top, where a new post goes.'
+        : 'No live posts loaded yet. You can still add mocks — they save to the backend either way.');
+}
+
+/* ---- lightbox: a mock gets its own controls; a live post links out ---- */
+function openLb(key, isMock){
+  const it = isMock ? (ST && ST.mocks.find(m => m.id === key)) : (FEED && FEED.posts[key]);
+  if (!it) return;
+  $('lbImg').src = isMock ? it.url : it.image;
+  $('lbCap').textContent = isMock
+    ? (it.name || 'mock') + ' · not posted' + (it.w ? ' · ' + it.w + '×' + it.h : '')
+    : (it.caption || '').slice(0, 220);
+  const btn = (label, on, fn, cls, data) => '<button class="tbtn' + (on ? ' on' : '') + (cls ? ' ' + cls : '') + '"' +
+    (data ? ' data-url="' + esc(data) + '"' : '') + ' onclick="' + fn + '">' + label + '</button>';
+  $('lbActs').innerHTML = isMock
+    ? btn('photo', it.type === 'IMAGE' || !it.type, 'setMockType(\'' + esc(it.id) + '\',\'IMAGE\')') +
+      btn('&#9654; reel', it.type === 'VIDEO', 'setMockType(\'' + esc(it.id) + '\',\'VIDEO\')') +
+      btn('&#10696; carousel', it.type === 'CAROUSEL_ALBUM', 'setMockType(\'' + esc(it.id) + '\',\'CAROUSEL_ALBUM\')') +
+      btn('remove', false, 'rmMock(\'' + esc(it.id) + '\');closeLb()', 'danger') +
+      btn('close', false, 'closeLb()')
+    : (it.permalink ? btn('open on instagram', false, 'window.open(this.dataset.url,\'_blank\',\'noopener\')', '', it.permalink) : '') +
+      btn('close', false, 'closeLb()');
+  $('lb').classList.add('on');
+}
+function closeLb(){ $('lb').classList.remove('on'); }
+
+/* ---- profile editor: overrides only, nothing here touches Instagram ---- */
+let edAv, edAvPath, edOpenSnap = '';   // edAv: undefined = leave as is, null = use live, string = new upload
+const ED_FIELDS = [['edUser','username'], ['edName','name'], ['edBio','bio'], ['edSite','website'], ['edPosts','posts'], ['edFol','followers'], ['edFing','following']];
+const edSnap = () => JSON.stringify(ED_FIELDS.map(([id]) => $(id).value)) + '|' + String(edAv);
+function openEd(){
+  if (!ST) return sv('not saved — hit sync to reconnect', true);
+  const o = ST.profile || {}, live = (FEED && FEED.profile) || {};
+  ED_FIELDS.forEach(([id, k]) => { const el = $(id); el.value = o[k] != null ? o[k] : ''; el.placeholder = live[k] != null && live[k] !== '' ? String(live[k]) : ''; });
+  $('edPosts').placeholder = String(prof().posts);
+  edAv = undefined; edAvPath = null;
+  $('edAv').src = o.avatar || live.avatar || '';
+  $('ed').classList.add('on');
+  edOpenSnap = edSnap();
+  if (!matchMedia('(max-width:640px)').matches) setTimeout(() => $('edUser').focus(), 50);
+}
+function closeEd(force){
+  if (!$('ed').classList.contains('on')) return;
+  if (!force && edSnap() !== edOpenSnap && !confirm('Throw away the edits you typed?')) return;
+  if (edAvPath && edAv) removeFiles([edAvPath]);   // uploaded a photo, then walked away: don't leave it in the bucket
+  $('ed').classList.remove('on');
+}
+// close on a backdrop click only when the press started on the backdrop too (a text selection
+// that ends outside the panel must not throw the edits away)
+let edDown = null;
+$('ed').addEventListener('pointerdown', e => { edDown = e.target; });
+$('ed').addEventListener('click', e => { if (e.target === $('ed') && edDown === $('ed')) closeEd(); });
+function edAvatar(url){
+  if (edAvPath && edAv && url !== edAv) removeFiles([edAvPath]);
+  edAv = url; if (!url) edAvPath = null;
+  $('edAv').src = url || ((FEED && FEED.profile && FEED.profile.avatar) || '');
+}
+$('avFile').onchange = async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  sv('uploading photo…');
+  try {
+    const { blob } = await shrink(f, 480);
+    const up = await upload(blob, 'avatar-' + uid() + '.jpg');
+    edAvatar(up.url); edAvPath = up.path; sv('photo ready — hit save');
+  } catch (err) { sv('upload failed — ' + (err.message || err), true); }
+};
+function saveEd(){
+  if (!ST) return;
+  const v = id => $(id).value.trim();
+  const num = id => { const t = v(id); return t === '' ? '' : Math.max(0, Math.round(Number(t) || 0)); };
+  const prev = ST.profile || {};
+  const o = Object.assign({}, prev, {
+    username: v('edUser').replace(/^@/, ''), name: v('edName'), bio: $('edBio').value.replace(/\s+$/, ''), website: v('edSite'),
+    posts: num('edPosts'), followers: num('edFol'), following: num('edFing'),
+  });
+  if (edAv !== undefined) {
+    if (prev.avatar_path && prev.avatar !== edAv) removeFiles([prev.avatar_path]);   // the old upload is no longer referenced
+    o.avatar = edAv || ''; o.avatar_path = edAv ? (edAvPath || '') : '';
+  }
+  Object.keys(o).forEach(k => { if (o[k] === '' || o[k] == null) delete o[k]; });
+  ST.profile = o;
+  edAvPath = null; edAv = undefined;
+  saveState(); paint(); closeEd(true);
+}
+function resetProfile(){
+  if (!ST) return;
+  const prev = ST.profile || {};
+  if (prev.avatar_path) removeFiles([prev.avatar_path]);
+  if (edAvPath && edAv) removeFiles([edAvPath]);
+  ST.profile = {}; edAv = undefined; edAvPath = null;
+  saveState(); paint(); closeEd(true); openEd();
+  sv('profile back to live');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if ($('ed').classList.contains('on')) closeEd(); else closeLb();
+});
+
+async function load(force){
+  if (!SUP_TOKEN) return;   // gate still up — ovd-ig answers 401 without a session
+  if (force) await refreshState();
+  let msg = null;
+  try {
+    const r = await fetch(API + '?limit=36' + (force ? '&nocache=1' : ''), { cache: 'no-store',
+      headers: { 'Authorization': 'Bearer ' + SUP_TOKEN, 'apikey': SB_ANON } });
+    if (r.status === 401) msg = 'signed out of instagram data — reload and sign in again';
+    else {
+      const j = await r.json();
+      if (j.error && !j.profile) msg = 'could not reach instagram — ' + (j.error || 'no answer');
+      else {
+        FEED = j;
+        if (j.stale) msg = 'showing a cached grid — instagram did not answer just now.';
+      }
+    }
+  } catch (e) { msg = 'could not load the live feed — ' + String(e.message || e); }
+  await ensureState();
+  paintBtns(); paint();
+  // the live feed failing must not take the planner down: mocks and the profile still work
+  if (msg) note('<span class="err">' + esc(msg) + '</span>' + (FEED ? '' : ' Your mocks and profile edits still work and still save.'));
+}
+async function boot(){
+  await load(false);
+}
+paintBtns();
+// the login block above calls boot() once a session exists; if it already opened
+// before this script ran (getSession resolved early), run it now
+if (SUP_TOKEN && !FEED) boot();
+</script>
+</body>
+</html>

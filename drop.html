@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>OVD — Production Schedule</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:site_name" content="WHATHAPPENEDTOGOD">
+<meta property="og:title" content="OVD — Production Schedule">
+<meta property="og:description" content="Drop production schedule · WHATHAPPENEDTOGOD">
+<meta property="og:image" content="https://whathappenedtogod.dev/icon-512.png">
+<meta name="twitter:card" content="summary">
+<style>
+  :root {
+    --bg:#f5f5f7; --panel:#fff; --tx:#1d1d1f; --tx2:#6e6e73; --tx3:#86868b;
+    --line:rgba(0,0,0,0.08); --shadow:0 2px 14px rgba(0,0,0,0.05); --img:#eee;
+    --fg-rgb:29,29,31;
+  }
+  html.dark {
+    --bg:#0a0a0a; --panel:rgba(255,255,255,0.03); --tx:rgba(255,255,255,0.92);
+    --tx2:rgba(255,255,255,0.55); --tx3:rgba(255,255,255,0.35);
+    --line:rgba(255,255,255,0.09); --shadow:none; --img:#161616;
+    --fg-rgb:245,245,247;
+  }
+  *,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--tx); -webkit-font-smoothing:antialiased; line-height:1.5;
+    transition:background .3s,color .3s; }
+  .wrap { max-width:960px; margin:0 auto; padding:26px 30px calc(70px + env(safe-area-inset-bottom)); }
+
+  .brand { display:flex; align-items:center; gap:14px; padding-bottom:20px; border-bottom:1px solid var(--line); margin-bottom:26px; }
+  .brand img.logo { width:38px; height:38px; object-fit:contain; }
+  html.dark .brand img.logo { filter:invert(1); }
+  .brand .n { font-size:12px; font-weight:600; letter-spacing:1.4px; text-transform:uppercase; color:var(--tx); }
+  .brand .s { font-size:9px; letter-spacing:3px; text-transform:uppercase; color:var(--tx3); margin-top:6px; }
+  .theme-btn { margin-left:auto; width:38px; height:38px; border-radius:980px; border:1px solid var(--line);
+    background:var(--panel); color:var(--tx2); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .theme-btn:hover { color:var(--tx); border-color:var(--tx3); }
+  .theme-btn svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+
+  /* Hero. 30% vertical anchor rather than dead centre — on a portrait model shot a centre
+     crop slices the top of the head off, which is what the shared link kept doing. */
+  .hero { position:relative; margin:0 -30px 20px; min-height:340px; display:flex; align-items:flex-end;
+    background-size:cover; background-position:center 30%; padding:0 30px 28px; }
+  .hero.plain { min-height:0; padding:0 30px 0; margin-bottom:16px; }
+  .hero .in { position:relative; z-index:2; width:100%; }
+  .hero.shot .kicker { color:rgba(255,255,255,0.72); }
+  .hero.shot h1 { color:#fff; text-shadow:0 2px 30px rgba(0,0,0,0.4); }
+  .hero.shot .cd-n { color:#fff; }
+  .hero.shot .cd-l, .hero.shot .when { color:rgba(255,255,255,0.66); }
+  .kicker { font-size:10px; letter-spacing:3px; text-transform:uppercase; color:var(--tx3); }
+  h1 { font-size:clamp(30px,5.6vw,52px); font-weight:700; letter-spacing:-1.6px; line-height:1.02; margin-top:10px; }
+  .when { font-size:13px; color:var(--tx2); margin-top:12px; font-variant-numeric:tabular-nums; }
+  .cd { display:flex; gap:26px; margin-top:20px; }
+  .cd-u { text-align:center; }
+  .cd-n { display:block; font-size:36px; font-weight:200; letter-spacing:-1.4px; line-height:1;
+    font-variant-numeric:tabular-nums; color:rgba(var(--fg-rgb),0.92); }
+  .cd-l { font-size:9.5px; letter-spacing:2.4px; text-transform:uppercase; color:var(--tx3); margin-top:7px; }
+
+  /* Summary strip — the factory's first question is how much of what, by when. */
+  .kpis { display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line); border-radius:16px;
+    overflow:hidden; background:var(--panel); margin-bottom:18px; box-shadow:var(--shadow); }
+  .kpi { padding:18px 20px; border-left:1px solid var(--line); }
+  .kpi:first-child { border-left:none; }
+  .kpi span { font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--tx3); display:block; }
+  .kpi b { font-size:22px; font-weight:600; letter-spacing:-.6px; display:block; margin-top:7px;
+    font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .kpi i { font-size:10px; color:var(--tx3); font-style:normal; display:block; margin-top:5px; }
+
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);
+    padding:24px; margin-bottom:18px; }
+  .h2 { font-size:10px; letter-spacing:2.5px; text-transform:uppercase; color:var(--tx3); font-weight:500; margin-bottom:18px; }
+  .h2 em { font-style:normal; color:var(--tx3); opacity:.7; letter-spacing:1px; text-transform:none; font-size:11px; margin-left:8px; }
+  .notes { font-size:14px; line-height:1.65; color:var(--tx2); white-space:pre-wrap; }
+
+  /* A run row carries a proportional bar, so the biggest jobs are obvious at a glance
+     instead of every line reading the same weight. */
+  .prod { display:grid; grid-template-columns:52px minmax(0,1fr) 84px; align-items:center; gap:15px;
+    padding:13px 0; border-bottom:1px solid var(--line); }
+  .prod:last-child { border-bottom:none; }
+  .prod > img { width:52px; height:52px; object-fit:cover; border-radius:11px; background:var(--img);
+    cursor:zoom-in; transition:opacity .2s; }
+  .prod > img:hover { opacity:.75; }
+  .prod .ph { width:52px; height:52px; border:1px dashed var(--line); border-radius:11px; }
+  .prod .t { font-size:14px; font-weight:500; line-height:1.35; }
+  .prod .bar { margin-top:8px; height:4px; border-radius:980px; background:rgba(var(--fg-rgb),0.07); overflow:hidden; }
+  .prod .bar i { display:block; height:100%; min-width:4px; border-radius:980px; background:rgba(var(--fg-rgb),0.42); }
+  .prod .q { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .prod .q b { display:block; font-size:16px; font-weight:600; letter-spacing:-.3px; }
+  .prod .q span { display:block; font-size:9.5px; letter-spacing:1.6px; text-transform:uppercase; color:var(--tx3); margin-top:3px; }
+
+  .gal { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:11px; }
+  .gal img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:12px; border:1px solid var(--line);
+    cursor:zoom-in; background:var(--img); }
+
+  .footer { margin-top:40px; padding-top:28px; border-top:1px solid var(--line);
+    display:flex; flex-direction:column; align-items:center; gap:15px; }
+  .live { display:inline-flex; align-items:center; gap:7px; font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--tx3); }
+  .live i { width:6px; height:6px; border-radius:50%; background:#30d158; display:block; animation:p 2.4s ease-in-out infinite; }
+  @keyframes p { 0%,100%{opacity:.4} 50%{opacity:1} }
+  .foot-logo { width:32px; height:32px; object-fit:contain; opacity:.55; }
+  html.dark .foot-logo { filter:invert(1); }
+  .foot { font-size:9.5px; letter-spacing:1.6px; text-transform:uppercase; color:var(--tx3); text-align:center;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .msg { text-align:center; padding:90px 20px; }
+  .msg .t { font-size:19px; font-weight:600; color:var(--tx2); }
+  .msg .s { font-size:12px; color:var(--tx3); margin-top:10px; letter-spacing:1px; }
+
+  .lb { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.94); z-index:50; align-items:center; justify-content:center; cursor:zoom-out; }
+  .lb.on { display:flex; animation:lbIn 0.2s ease; }
+  @keyframes lbIn { from { opacity:0; } to { opacity:1; } }
+  .lb img { max-width:92vw; max-height:88vh; border-radius:10px; cursor:default; }
+  .lb-x { position:absolute; top:calc(18px + env(safe-area-inset-top)); right:22px; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+    font-size:17px; color:rgba(255,255,255,0.55); border:1px solid rgba(255,255,255,0.16); border-radius:980px; cursor:pointer; transition:all 0.2s; }
+  .lb-x:hover { color:#fff; border-color:rgba(255,255,255,0.4); }
+  .lb-nav { position:absolute; top:50%; transform:translateY(-50%); width:46px; height:46px; display:none; align-items:center; justify-content:center;
+    font-size:26px; line-height:1; color:rgba(255,255,255,0.5); border:1px solid rgba(255,255,255,0.14); border-radius:980px; cursor:pointer; user-select:none; transition:all 0.2s; }
+  .lb-nav:hover { color:#fff; border-color:rgba(255,255,255,0.38); background:rgba(255,255,255,0.06); }
+  .lb-prev { left:18px; padding-right:3px; } .lb-next { right:18px; padding-left:3px; }
+  .lb-cap { position:absolute; bottom:calc(22px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); text-align:center; max-width:80vw; }
+  .lb-cap .t { font-size:12px; font-weight:500; color:rgba(255,255,255,0.9); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lb-cap .c { font-size:9.5px; letter-spacing:2px; color:rgba(255,255,255,0.45); margin-top:6px; }
+
+  @media (max-width:760px){
+    .kpis { grid-template-columns:repeat(2,1fr); }
+    .kpi:nth-child(odd) { border-left:none; }
+    .kpi:nth-child(n+3) { border-top:1px solid var(--line); }
+  }
+  @media (max-width:600px){
+    .wrap { padding:22px 16px calc(56px + env(safe-area-inset-bottom)); }
+    .hero { min-height:260px; margin:0 -16px 16px; padding:0 16px 22px; }
+    .hero.plain { padding:0 16px 0; }
+    .cd { gap:20px; } .cd-n { font-size:28px; }
+    .card { padding:18px; }
+    .prod { grid-template-columns:46px minmax(0,1fr) 68px; gap:12px; }
+    .prod > img, .prod .ph { width:46px; height:46px; }
+    .prod .q b { font-size:15px; }
+    .lb-nav { width:40px; height:40px; font-size:22px; } .lb-prev { left:8px; } .lb-next { right:8px; }
+    .lb img { max-width:94vw; max-height:78vh; }
+    .foot { font-size:8px; letter-spacing:1px; }
+    .footer { margin-top:32px; padding-top:24px; gap:13px; }
+  }
+
+  body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  .safe-fill { position:fixed; top:0; left:0; right:0; height:env(safe-area-inset-top); background:var(--bg); z-index:9998; pointer-events:none; }
+</style>
+  <meta name="theme-color" content="#f5f5f7">
+</head>
+<body>
+<div class="safe-fill"></div>
+<div class="wrap" id="root"><div class="msg"><div class="t">Loading…</div></div></div>
+<div class="lb" id="lb" onclick="closeLb()">
+  <div class="lb-x" onclick="event.stopPropagation();closeLb()" aria-label="close">✕</div>
+  <div class="lb-nav lb-prev" onclick="event.stopPropagation();lbStep(-1)" aria-label="previous">‹</div>
+  <img id="lbImg" src="" alt="" onclick="event.stopPropagation()">
+  <div class="lb-nav lb-next" onclick="event.stopPropagation();lbStep(1)" aria-label="next">›</div>
+  <div class="lb-cap"><div class="t" id="lbTitle"></div><div class="c" id="lbCount"></div></div>
+</div>
+<script>
+const ICON_SUN = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><line x1="12" y1="1.6" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.4"/><line x1="4.2" y1="4.2" x2="5.9" y2="5.9"/><line x1="18.1" y1="18.1" x2="19.8" y2="19.8"/><line x1="1.6" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.4" y2="12"/><line x1="4.2" y1="19.8" x2="5.9" y2="18.1"/><line x1="18.1" y1="5.9" x2="19.8" y2="4.2"/></svg>';
+const ICON_MOON = '<svg viewBox="0 0 24 24"><path d="M20.5 14.6A8.6 8.6 0 019.4 3.5a8.6 8.6 0 1011.1 11.1z"/></svg>';
+const DROP_API = 'https://bvftcotmjmoijunnpjdh.supabase.co/functions/v1/ovd-drop';
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const num = n => Number(n || 0).toLocaleString();
+const root = document.getElementById('root');
+let lastStamp = null, dropId = null, cdTimer = null;
+
+function applyTheme(t){
+  document.documentElement.classList.toggle('dark', t === 'dark');
+  localStorage.setItem('ovd_drop_theme', t);
+  const mtc = document.querySelector('meta[name=theme-color]');
+  if (mtc) mtc.setAttribute('content', t === 'dark' ? '#0a0a0a' : '#f5f5f7');
+  const b = document.getElementById('themeBtn');
+  if (b) b.innerHTML = t === 'dark' ? ICON_SUN : ICON_MOON;
+  // the hero shade is baked per-theme, so a toggle has to repaint it
+  if (lastData) render(lastData, true);
+}
+(function initTheme(){
+  const saved = localStorage.getItem('ovd_drop_theme');
+  const sys = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.classList.toggle('dark', (saved || sys) === 'dark');
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (!localStorage.getItem('ovd_drop_theme')) {
+      document.documentElement.classList.toggle('dark', e.matches);
+      if (lastData) render(lastData, true);
+    }
+  });
+})();
+function toggleTheme(){ applyTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark'); }
+
+function show(t, s){ root.innerHTML = '<div class="msg"><div class="t">' + t + '</div><div class="s">' + s + '</div></div>'; }
+// full-res: strip Shopify size transforms so the lightbox shows the original file
+const hiRes = u => String(u == null ? '' : u)
+  .replace(/_(\d+)x(\d+)?(_crop_[a-z]+)?(?=\.(jpe?g|png|webp|gif)\b)/i, '')
+  .replace(/([?&])width=\d+/i, '$1width=2400');
+
+let LB = [], lbIdx = 0, lastData = null;
+function openLb(list, idx){
+  LB = (Array.isArray(list) ? list : [{ url: list }]).filter(x => x && x.url);
+  if (!LB.length) return;
+  lbIdx = Math.max(0, Math.min(LB.length - 1, idx || 0));
+  paintLb();
+  document.getElementById('lb').classList.add('on');
+  document.body.style.overflow = 'hidden';
+}
+function paintLb(){
+  const it = LB[lbIdx];
+  document.getElementById('lbImg').src = hiRes(it.url);
+  document.getElementById('lbTitle').textContent = it.title || '';
+  document.getElementById('lbCount').textContent = LB.length > 1 ? (lbIdx + 1) + ' / ' + LB.length : '';
+  document.querySelectorAll('.lb-nav').forEach(n => n.style.display = LB.length > 1 ? 'flex' : 'none');
+  LB.slice(lbIdx + 1, lbIdx + 3).forEach(n => { const p = new Image(); p.src = hiRes(n.url); });
+}
+function lbStep(d){ if (LB.length < 2) return; lbIdx = (lbIdx + d + LB.length) % LB.length; paintLb(); }
+function closeLb(){ document.getElementById('lb').classList.remove('on'); document.body.style.overflow = ''; }
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('lb').classList.contains('on')) return;
+  if (e.key === 'Escape') closeLb();
+  else if (e.key === 'ArrowLeft') lbStep(-1);
+  else if (e.key === 'ArrowRight') lbStep(1);
+});
+(function swipe(){
+  const lb = document.getElementById('lb');
+  let x0 = null;
+  lb.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  lb.addEventListener('touchend', e => {
+    if (x0 == null) return;
+    const dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 45) lbStep(dx < 0 ? 1 : -1);
+  }, { passive: true });
+})();
+
+function render(data, repaint){
+  lastData = data;
+  const [y,m,d] = data.date.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = Math.round((dt - today) / 86400000);
+  const rel = days === 0 ? 'today' : days === 1 ? 'tomorrow' : days > 1 ? 'in ' + days + ' days' : Math.abs(days) + ' days ago';
+  const photos = data.photos || [], items = data.items || [];
+  const dark = document.documentElement.classList.contains('dark');
+  window.PRODIMGS = items.filter(i => i.image).map(i => ({ url: i.image, title: i.title }));
+  window.GALIMGS = photos.map(p => ({ url: p.url, title: data.title }));
+  const gIdx = {}; let gn = 0;
+  items.forEach((i, ix) => { if (i.image) gIdx[ix] = gn++; });
+
+  const qtys = items.map(i => Number(i.qty) || 0);
+  const totalUnits = qtys.reduce((a, b) => a + b, 0);
+  const maxQty = Math.max(...qtys, 1);
+  const dropLabel = MONTHS[dt.getMonth()] + ' ' + dt.getDate();
+
+  root.innerHTML =
+    '<div class="brand"><img class="logo" src="https://whathappenedtogod.co/cdn/shop/files/OVD_BLACK_TRANSPARENT.png" alt="OVD">' +
+    '<div><div class="n">WHATHAPPENEDTOGOD</div><div class="s">Production Schedule</div></div>' +
+    '<button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="toggle light or dark">' + (dark ? ICON_SUN : ICON_MOON) + '</button></div>' +
+    (function(){
+      const cover = photos.length ? photos[0].url : null;
+      const shade = dark
+        ? 'linear-gradient(to top, var(--bg) 2%, rgba(10,10,10,0.6) 46%, rgba(10,10,10,0.22))'
+        : 'linear-gradient(to top, var(--bg) 2%, rgba(0,0,0,0.4) 46%, rgba(0,0,0,0.16))';
+      return '<div class="hero ' + (cover ? 'shot' : 'plain') + '"' +
+        (cover ? ' style="background-image:' + shade + ', url(\'' + esc(cover) + '\')"' : '') + '><div class="in">' +
+        '<div class="kicker">' + (days >= 0 ? 'UPCOMING DROP · ' + dropLabel : 'RELEASED · ' + dropLabel) + '</div>' +
+        '<h1>' + esc(data.title) + '</h1>' +
+        (days > 0
+          ? '<div class="cd"><div class="cd-u"><b class="cd-n" id="cdd">0</b><div class="cd-l">days</div></div>' +
+            '<div class="cd-u"><b class="cd-n" id="cdh">0</b><div class="cd-l">hrs</div></div>' +
+            '<div class="cd-u"><b class="cd-n" id="cdm">0</b><div class="cd-l">min</div></div></div>'
+          : '<div class="when">' + dropLabel + ', ' + dt.getFullYear() + ' · ' + rel + '</div>') +
+        '</div></div>';
+    })() +
+    (items.length
+      ? '<div class="kpis">' +
+          '<div class="kpi"><span>Pieces</span><b>' + items.length + '</b><i>in this drop</i></div>' +
+          '<div class="kpi"><span>Total units</span><b>' + num(totalUnits) + '</b><i>across all pieces</i></div>' +
+          '<div class="kpi"><span>Largest run</span><b>' + num(maxQty) + '</b><i>single piece</i></div>' +
+          '<div class="kpi"><span>Drop date</span><b>' + dropLabel + '</b><i>' + esc(rel) + '</i></div>' +
+        '</div>'
+      : '') +
+    (data.notes ? '<div class="card"><h2 class="h2">Notes</h2><div class="notes">' + esc(data.notes) + '</div></div>' : '') +
+    (items.length ? '<div class="card"><h2 class="h2">Products in this drop<em>' + items.length +
+      ' pieces · ' + num(totalUnits) + ' units</em></h2>' + items.map((i, ix) => {
+        const q = Number(i.qty) || 0;
+        return '<div class="prod">' +
+          (i.image ? '<img src="' + esc(i.image) + '" loading="lazy" onclick="openLb(PRODIMGS,' + gIdx[ix] + ')" alt="">' : '<div class="ph"></div>') +
+          '<div><div class="t">' + esc(i.title) + '</div>' +
+            (q > 0 ? '<div class="bar"><i style="width:' + (q / maxQty * 100).toFixed(1) + '%"></i></div>' : '') +
+          '</div>' +
+          '<div class="q">' + (q > 0 ? '<b>' + num(q) + '</b><span>units</span>' : '<b>—</b><span>tbc</span>') + '</div>' +
+        '</div>';
+      }).join('') + '</div>' : '') +
+    (photos.length ? '<div class="card"><h2 class="h2">Collection<em>' + photos.length + ' photos</em></h2><div class="gal">' + photos.map((p, ix) =>
+      '<img src="' + esc(p.url) + '" loading="lazy" onclick="openLb(GALIMGS,' + ix + ')" alt="">').join('') + '</div></div>' : '') +
+    '<div class="footer">' +
+      '<div class="live"><i></i>live — updates automatically</div>' +
+      '<img class="foot-logo" src="https://whathappenedtogod.co/cdn/shop/files/OVD_BLACK_TRANSPARENT.png" alt="OVD">' +
+      '<div class="foot">WHATHAPPENEDTOGOD ® CONFIDENTIAL — DO NOT DISTRIBUTE</div>' +
+    '</div>';
+
+  if (days > 0) {
+    const tick = () => {
+      const ms = dt - new Date();
+      const dd = document.getElementById('cdd');
+      if (!dd || ms <= 0) return;
+      dd.textContent = Math.floor(ms/86400000);
+      document.getElementById('cdh').textContent = Math.floor(ms%86400000/3600000);
+      document.getElementById('cdm').textContent = Math.floor(ms%3600000/60000);
+    };
+    tick();
+    if (cdTimer) clearInterval(cdTimer);
+    cdTimer = setInterval(tick, 20000);
+  }
+  if (!repaint) document.title = 'OVD — ' + data.title;
+}
+
+async function load(initial){
+  try {
+    const res = await fetch(DROP_API + '?id=' + encodeURIComponent(dropId) + '&t=' + Date.now(), { cache: 'no-store' });
+    if (res.status === 404) { if (initial) show('Not available', 'this link is off or expired'); return; }
+    if (!res.ok) { if (initial) show('Could not load', 'please try again'); return; }
+    const data = await res.json();
+    const stamp = JSON.stringify([data.title, data.date, data.notes, data.items, data.photos, data.updated_at]);
+    if (stamp !== lastStamp) { lastStamp = stamp; render(data); }
+  } catch(e) { if (initial) show('Could not load', 'check your connection'); }
+}
+
+dropId = (new URLSearchParams(location.search).get('d') || '').trim() || (location.hash || '').replace('#','').trim();
+if (!dropId) show('No drop specified', 'ask for a valid link');
+else {
+  load(true);
+  setInterval(() => { if (!document.hidden) load(false); }, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) load(false); });
+}
+</script>
+</body>
+</html>

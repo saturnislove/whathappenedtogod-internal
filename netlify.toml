@@ -1,0 +1,7 @@
+[[edge_functions]]
+  path = "/budget.html"
+  function = "budget-meta"
+
+[[edge_functions]]
+  path = "/drop.html"
+  function = "drop-meta"
